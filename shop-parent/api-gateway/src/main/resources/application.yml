@@ -1,0 +1,27 @@
+server:
+  port: 9000
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    gateway:
+      discovery:
+        locator:
+          enabled: true # 让gateway可以发现nacos中的微服务
+      routes:
+        - id: product_route
+          uri: lb://product-service # lb指的是从nacos中按照名称获取微服务,并遵循负载均 衡策略
+          predicates:
+            - Path=/product-serv/**
+          filters:
+            - StripPrefix=1
+        - id: order_route
+          uri: lb://order-service # lb指的是从nacos中按照名称获取微服务,并遵循负载均 衡策略
+          predicates:
+            - Path=/order-serv/**
+          filters:
+            - StripPrefix=1
+            - Time=true
