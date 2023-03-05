@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.user</groupId>
+    <artifactId>user-server</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+    <modules>
+        <module>user-server-consumer</module>
+    </modules>
+    <!--在标签内可以把版本号作为变量进行声明,后面dependency中用到版本号时可以用${变量名}的形式代替,这样做的好处是:
+    当版本号发生改变时,只有更新properties标签中的变量就行了,不用更新所有依赖的版本号-->
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spring.cloud.version>Hoxton.SR8</spring.cloud.version>
+        <springboot.version>2.3.2.RELEASE</springboot.version>
+        <springcloudalibaba.version>2.2.5.RELEASE</springcloudalibaba.version>
+    </properties>
+    <!--    dependencyManagement一般出现在最顶层父工程的pom文件中,它的作用是用来管理jar版本,让子项目引用一个依赖而不用指明版本号-->
+    <dependencyManagement>
+
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring.cloud.version}</version>
+    <!-- type对于所选依赖的类型，即我们前面项目可以打成多种包，jar，pom之类。。。同样我们依赖的时候，也可以选择依赖的类型，默认是jar -->
+                <type>pom</type>
+    <!--scope指定依赖生效的范围，maven其实有三套classpath，即编译，测试，运行（即打包后生成的target文件中的lib，是你实际运行时候所需要依赖的jar）-->
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version> ${springboot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${springcloudalibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+
+    </dependencyManagement>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
