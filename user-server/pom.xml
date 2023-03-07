@@ -11,6 +11,11 @@
     <modules>
         <module>user-server-consumer</module>
     </modules>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.3.2.RELEASE</version>
+    </parent>
     <!--在标签内可以把版本号作为变量进行声明,后面dependency中用到版本号时可以用${变量名}的形式代替,这样做的好处是:
     当版本号发生改变时,只有更新properties标签中的变量就行了,不用更新所有依赖的版本号-->
     <properties>
