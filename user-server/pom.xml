@@ -36,6 +36,9 @@
         <mybatis.ibeetl.version>3.5.2</mybatis.ibeetl.version>
         <springboot.freemarker.version>2.2.11.RELEASE</springboot.freemarker.version>
         <mysql.version>5.1.49</mysql.version>
+        <slf4j.version>1.7.25</slf4j.version>
+        <log4j.version>2.16.0</log4j.version>
+        <lombok.version>1.18.16</lombok.version>
     </properties>
     <!--    dependencyManagement一般出现在最顶层父工程的pom文件中,它的作用是用来管理jar版本,让子项目引用一个依赖而不用指明版本号-->
     <dependencyManagement>
@@ -89,6 +92,27 @@
                 <groupId>mysql</groupId>
                 <artifactId>mysql-connector-java</artifactId>
                 <version>${mysql.version}</version>
+            </dependency>
+            <!--        slf4j-->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-log4j12</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
             </dependency>
         </dependencies>
 
