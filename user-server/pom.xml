@@ -36,9 +36,12 @@
         <mybatis.ibeetl.version>3.5.2</mybatis.ibeetl.version>
         <springboot.freemarker.version>2.2.11.RELEASE</springboot.freemarker.version>
         <mysql.version>5.1.49</mysql.version>
-        <slf4j.version>1.7.25</slf4j.version>
+        <slf4j.version>1.7.21</slf4j.version>
         <log4j.version>2.16.0</log4j.version>
         <lombok.version>1.18.16</lombok.version>
+        <ibeetl.version>3.0.15.RELEASE</ibeetl.version>
+        <jdbc.version>2.5.12</jdbc.version>
+        <freemarker.version>2.3.30</freemarker.version>
     </properties>
     <!--    dependencyManagement一般出现在最顶层父工程的pom文件中,它的作用是用来管理jar版本,让子项目引用一个依赖而不用指明版本号-->
     <dependencyManagement>
@@ -82,6 +85,11 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
+                <groupId>com.ibeetl</groupId>
+                <artifactId>beetl</artifactId>
+                <version>${ibeetl.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-freemarker</artifactId>
                 <version>${springboot.freemarker.version}</version>
@@ -89,15 +97,36 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
+                <groupId>org.freemarker</groupId>
+                <artifactId>freemarker</artifactId>
+                <version>${freemarker.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-jdbc</artifactId>
+                <version>${jdbc.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>mysql</groupId>
                 <artifactId>mysql-connector-java</artifactId>
                 <version>${mysql.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <!--        slf4j-->
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-log4j12</artifactId>
+                <version>${slf4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>log4j</groupId>
@@ -105,14 +134,11 @@
                 <version>${log4j.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
 

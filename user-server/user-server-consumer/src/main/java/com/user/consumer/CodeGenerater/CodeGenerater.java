@@ -1,4 +1,4 @@
-package CodeGenerater;
+package com.user.consumer.CodeGenerater;
 
 
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
@@ -18,6 +18,7 @@ import java.util.List;
 /**
  * 代码生成器
  */
+
 public class CodeGenerater {
     public static void main(String[] args) {
         // 代码生成器
@@ -25,9 +26,10 @@ public class CodeGenerater {
         // 全局配置
         GlobalConfig gc = new GlobalConfig();
         // 项目名和路径
-        String projectPath = System.getProperty("E:/gitHubDevHome/robotization/user-server/user-server-consumer");
+//        String projectPath = System.getProperty("E:/gitHubDevHome/robotization/user-server/user-server-consumer");
+        String path = "E:/gitHubDevHome/robotization/user-server/user-server-consumer";
         // 生成文件的输出目录，默认D盘根目录
-        gc.setOutputDir(projectPath+"/src/main/java");
+        gc.setOutputDir(path+"/src/main/java");
         // 是否覆盖已有文件
         gc.setFileOverride(true);
         // 开发人员
@@ -37,7 +39,7 @@ public class CodeGenerater {
         // 否在xml中添加二级缓存配置,默认false
         gc.setEnableCache(false);
         // 开启 swagger2 模式,默认false，这里推荐使用JApiDocs，使用方法见：https://blog.csdn.net/u013919153/article/details/110440311
-        gc.setSwagger2(true);
+        gc.setSwagger2(false);
         //指定生成实体类名称
         gc.setEntityName("%s");
         // mapper文件名称
@@ -52,9 +54,9 @@ public class CodeGenerater {
 
         // 数据源配置
         DataSourceConfig dsc = new DataSourceConfig();
-        dsc.setUrl("jdbc:mysql://127.0.0.1:3306/c_robotization?useSSL=false&zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false");
+        dsc.setUrl("jdbc:mysql://127.0.0.1:3306/c_robotization?serverTimezone=UTC&useUnicode=true&characterEncoding=utf-8&useSSL=false");
         dsc.setSchemaName("databaseName");
-        dsc.setDriverName("com.mysql.cj.jdbc.Driver");
+        dsc.setDriverName("com.mysql.jdbc.Driver");
         dsc.setUsername("root");
         dsc.setPassword("root");
         dsc.setTypeConvert(new MySqlTypeConvert());
@@ -62,10 +64,10 @@ public class CodeGenerater {
 
         // 包名
         PackageConfig pc = new PackageConfig();
-        pc.setModuleName("user-server-consumer");
+//        pc.setModuleName("user-server-consumer");
         pc.setParent("com.user.consumer");
-        pc.setEntity("Entity.user");
-        pc.setMapper("Dao");
+        pc.setEntity("entity");
+        pc.setMapper("dao");
         pc.setController("Controller");
         auto.setPackageInfo(pc);
 
@@ -85,7 +87,7 @@ public class CodeGenerater {
             @Override
             public String outputFile(TableInfo tableInfo) {
                 // 自定义xml文件输出名
-                return projectPath + "/src/main/java/com/user/consumer/mapper" + tableInfo.getEntityName() + "Mapper" + StringPool.DOT_XML;
+                return path + "/src/main/java/com/user/consumer/mapper" + tableInfo.getEntityName() + "Mapper" + StringPool.DOT_XML;
             }
         });
          cfg.setFileOutConfigList(focList);
