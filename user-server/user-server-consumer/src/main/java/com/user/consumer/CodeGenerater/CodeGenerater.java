@@ -62,13 +62,14 @@ public class CodeGenerater {
         dsc.setTypeConvert(new MySqlTypeConvert());
         auto.setDataSource(dsc);
 
-        // 包名
+        // 创建包名
         PackageConfig pc = new PackageConfig();
 //        pc.setModuleName("user-server-consumer");
         pc.setParent("com.user.consumer");
         pc.setEntity("entity");
         pc.setMapper("dao");
-        pc.setController("Controller");
+        pc.setXml("mapper");
+        pc.setController("controller");
         auto.setPackageInfo(pc);
 
         // 自定义配置
@@ -83,11 +84,11 @@ public class CodeGenerater {
 
         // 自定义输出配置
         List<FileOutConfig> focList= new ArrayList<>();
-        focList.add(new FileOutConfig() {
+        focList.add(new FileOutConfig(templatePath) {
             @Override
             public String outputFile(TableInfo tableInfo) {
                 // 自定义xml文件输出名
-                return path + "/src/main/java/com/user/consumer/mapper" + tableInfo.getEntityName() + "Mapper" + StringPool.DOT_XML;
+                return path + "/src/main/java/com/user/consumer/mapper/" + tableInfo.getEntityName() + "Mapper" + StringPool.DOT_XML;
             }
         });
          cfg.setFileOutConfigList(focList);
@@ -119,8 +120,8 @@ public class CodeGenerater {
         // 生成 @RestController 控制器
         strategy.setRestControllerStyle(false);
         //strategy.setSuperControllerClass("com.music.taosim.ant.common.BaseController");
-        // 当对某张表有所改动但只想重新生成这张表，可以这样设置
-        //startegy.setInclude("tableName");
+        // 当对某张表生成,如果想对所有表生成，就注释掉
+        strategy.setInclude("c_user");
         // 驼峰转连字符 如 umps_user 变为 upms/user
         strategy.setControllerMappingHyphenStyle(true);
         // 表前缀
