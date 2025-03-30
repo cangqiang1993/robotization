@@ -1,0 +1,35 @@
+# 新增性能配置
+performance:
+  target_fps: 30
+  max_cpu_usage: 85
+  detection_interval: 0.1
+
+# 调试配置
+debug:
+  show_overlay: true
+  save_failed_frames: false
+  log_level: "INFO"
+
+# config/settings.yaml
+game:
+  type: "3dmmo"  # 2d/3dmmo
+  camera:
+    fov: [70, 40]  # 水平,垂直视野角度
+    resolution: [1920, 1080]
+
+3d_perception:
+  depth_model: "models/depth_estimation.pth"
+  min_depth: 0.5    # 最近距离(米)
+  max_depth: 100.0  # 最远距离(米)
+
+combat:
+  threat_levels:   # 怪物威胁等级
+    monster_normal: 1
+    monster_elite: 3
+    monster_boss: 5
+
+navigation:
+  terrain_cost:    # 地形移动成本
+    water: 1.5
+    cliff: 2.0
+    normal: 1.0

@@ -1,0 +1,13 @@
+train: ../dataset/images/train
+val: ../dataset/images/val
+
+# 游戏目标类别
+names:
+  0: monster_normal
+  1: monster_elite
+  2: monster_boss
+  3: npc_friendly
+  4: item_health
+  5: item_mana
+  6: ui_button
+  7: minimap_marker
