@@ -1,26 +1,59 @@
+import logging
 from collections import deque
 
 import cv2
 import time
 
+import numpy as np
 import psutil
 import pyautogui
-import torch
 import yaml
 from pathlib import Path
 
 from numpy import random
 from pynput import keyboard
-from yolov5.utils.loggers.comet import config
 
+from src.images_array import ImagesPathfinding
 from src.mmo.combat_3d import MMO_CombatSystem
 from src.mmo.navigation_3d import MMO_Navigator
 from src.mmo.perception_3d import ThreeDPerception
 from src.monitor import GameMonitor
+from src.videoFrameLoader import VideoFrameLoader
 from .detector import YOLODetector
 from .obs_capture import OBSCapture
 from .navigation import Navigator
 from .combat import CombatSystem
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("路径检测--1")
+
+
+def load_config(config_path: str = None) -> dict:
+    """加载YAML配置文件"""
+    if config_path is None:
+        config_path = Path("settings.yaml")
+    else:
+        config_path = Path(config_path)
+
+    if not config_path.exists():
+        raise FileNotFoundError(f"配置文件不存在: {config_path.absolute()}")
+
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+
+    required_fields = {
+        "obs": ["mode"],
+        "performance": ["target_fps"]
+    }
+    for section, fields in required_fields.items():
+        if section not in config:
+            raise ValueError(f"配置缺少必要部分: {section}")
+        for field in fields:
+            if field not in config[section]:
+                raise ValueError(f"配置缺少必要字段: {section}.{field}")
+
+    return config
+
 
 
 class AntiDetection:
@@ -60,20 +93,34 @@ class AntiDetection:
             duration = random.uniform(1.0, 5.0)  # 1-5秒随机休息
             time.sleep(duration)
 
+
 class GameBot:
-    def __init__(self, config_path='config/settings.yaml'):
+    def __init__(self, config_path, walk_circuit_path):
+        self.imgs = ImagesPathfinding(walk_circuit_path)
         # 加载配置
-        with open(config_path) as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             self.config = yaml.safe_load(f)
 
         # 初始化模块
-        self.detector = YOLODetector(
-            weights_path=self.config['yolo']['weights_path'],
-            device=self.config['yolo']['device'])
+        result = self.imgs.load_images()
+        # 处理返回结果（单图或列表）
+        if isinstance(result, list):
+            print(f"加载了 {len(result)} 张图像")
+            display_img = result[0]  # 默认显示第一张
+        else:
+            print("加载了单张图像")
+            display_img = result
 
-        self.navigator = Navigator(self.config, self.detector)
-        self.combat_system = CombatSystem(self.config, self.detector)
-
+        # 显示图像（确保是numpy数组）
+        if isinstance(display_img, np.ndarray):
+            cv2.imshow("Loaded Image", display_img)
+            cv2.waitKey(3000)
+            cv2.destroyAllWindows()
+        else:
+            raise ValueError("图像格式错误，无法显示")
+        self.detector = YOLODetector(self.config)
+        # 统一处理输入（单图或列表都可用）
+        self.detector.detect(result if isinstance(result, list) else [result])
         # 3D MMO专用初始化
         if self.config['game']['type'] == '3dmmo':
             self.perception_3d = ThreeDPerception(self.config)
@@ -82,6 +129,11 @@ class GameBot:
         else:
             self.navigator = Navigator(self.config, self.detector)
             self.combat_system = CombatSystem(self.config, self.detector)
+
+        self.load_video_frames(walk_circuit_path)  # 加载视频帧和构建地图（需在 perception_3d 初始化后调用）
+        self.plan_route()
+        self.navigator = Navigator(self.config, self.detector)
+        self.combat_system = CombatSystem(self.config, self.detector)
 
         # 反检测模块
         self.antidetection = AntiDetection(self.config.get('antidetection', {}))
@@ -93,6 +145,7 @@ class GameBot:
         self.running = False
         self.paused = False
         self.current_mode = 'explore'  # explore/combat/follow
+        config = load_config("E:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml")
         self.monitor = GameMonitor(config)
 
     def start(self, detect_start=None):
@@ -182,6 +235,70 @@ class GameBot:
                 print(f"Bot {status}")
         except AttributeError:
             pass
+
+    # 3D感知
+    def build_3d_map(self):
+        map_3d = []
+        for frame in self.frame_loader.get_frame():
+            depth = self.perception_3d.depth_estimator.estimate(frame)
+            walkable = self.perception_3d.get_walkable_mask(depth)
+            map_3d.append(walkable)
+        return np.stack(map_3d)  # 3D体素地图
+
+    def load_video_frames(self, frame_dir):
+        """加载预处理好的视频帧序列"""
+        self.frame_loader = VideoFrameLoader(frame_dir)  # 使用前文定义的帧加载器
+        self.frames = list(self.frame_loader.get_frame())  # 缓存所有帧
+        logger.info(f"已加载 {len(self.frames)} 帧副本画面")
+
+    # 基于加载的视频帧，分析3D地形并规划全局最优路径
+    def plan_route(self):
+        """规划副本全局路径"""
+        # 1. 构建3D地图（整合 perception_3d.py 和 pathfinder_3d.py）
+        walkable_map = self._build_3d_map()
+
+        # 2. 设置起点（第一帧中心）和终点（最后一帧的BOSS位置）
+        start_pos = (0, walkable_map.shape[1] // 2, walkable_map.shape[2] // 2)
+        end_pos = (-1, *self._detect_boss_position(self.frames[-1]))
+
+        # 3. 调用A*算法规划路径（使用 pathfinder_3d.py）
+        from src.mmo.pathfinder_3d import PathFinder3D
+        pathfinder = PathFinder3D(walkable_map)
+        return pathfinder.find_path(start_pos, end_pos)
+
+    def _build_3d_map(self):
+        """构建3D可行走地图，整合深度感知和几何分析"""
+        # 初始化3D地图数组
+        map_3d = np.zeros((len(self.frames), self.frames[0].shape[0], self.frames[0].shape[1]), dtype=np.uint8)
+
+        for i, frame in enumerate(self.frames):
+            # 1. 估计深度图
+            depth_map = self.perception_3d.depth_estimator.estimate(frame)
+
+            # 2. 计算可行走区域
+            walkable_mask = self.perception_3d.get_walkable_mask(depth_map)
+
+            # 3. 障碍物检测 (使用GeometryAnalyzer)
+            if hasattr(self.perception_3d, 'geometry_analyzer'):
+                obstacles = self.perception_3d.geometry_analyzer.detect_obstacles(depth_map)
+                walkable_mask &= ~obstacles
+
+            # 4. 将可行走区域存入3D地图
+            map_3d[i] = walkable_mask.astype(np.uint8)
+
+            # 5. 可选: 应用形态学操作平滑地图
+            kernel = np.ones((3, 3), np.uint8)
+            map_3d[i] = cv2.morphologyEx(map_3d[i], cv2.MORPH_CLOSE, kernel)
+
+        # 6. 确保地图连通性 (移除孤立区域)
+        for i in range(map_3d.shape[0]):
+            _, labels = cv2.connectedComponents(map_3d[i])
+            if np.max(labels) > 0:  # 有连通区域
+                # 只保留最大的连通区域
+                largest_component = np.argmax(np.bincount(labels.flat)[1:]) + 1
+                map_3d[i] = (labels == largest_component).astype(np.uint8)
+
+        return map_3d
 
 
 if __name__ == "__main__":

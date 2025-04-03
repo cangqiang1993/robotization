@@ -3,32 +3,50 @@ auto_game_bot_yolo/
 ├── data/
 │   ├── dataset/              # YOLOv5训练数据集
 │   │   ├── images/           # 图像样本
+│   │   │    ├── train/       # 训练图像
+│   │   │    └── val/         # 验证图像
 │   │   └── labels/           # 标注文件
+│   │        ├── train/       # 训练标注
+│   │        └── val/         # 验证标注
 │   ├── recordings/           # 预录视频路径
 │   └── weights/              # 模型权重
 │       └── best.pt           # 训练好的模型
 │
 ├── config/
 │   ├── yolov5s.yaml          # 模型配置文件
-│   └── settings.yaml         # 应用配置
+│   ├── game_yolov5s.yaml     # 游戏目标检测优化版
+│   └── settings.yaml         # 游戏配置及全局配置
+│   └── game_data.yaml        # 游戏目标类别
 │
 ├── src/
 │   ├──mmo/                   # 新增3D MMO专用模块
 │   │   ├── __init__.py
-│   │   ├── perception_3d.py  # 3D环境感知
-│   │   ├── navigation_3d.py   # 3D导航
-│   │   └── combat_3d.py       # 3D战斗系统
+│   │   ├── perception_3d.py  # 3D环境感知深度图与几何分析的集成
+│   │   ├── navigation_3d.py  # 3D导航
+│   │   ├── pathfinder_3d.py  # 3D路径规划
+│   │   └── combat_3d.py      # 3D战斗系统
 │   ├── detector.py           # 修改支持3D目标
 │   ├── bot.py                # 主程序
 │   ├── detector.py           # YOLOv5检测器
 │   ├── obs_capture.py        # OBS画面捕获
 │   ├── navigation.py         # 导航系统
+│   ├── dungeon.py            # 副本流程状态机
+│   ├── team_coordinator.py   # 团队协作功能
+│   ├── visualizer.py         # 调试可视化工具
+│   ├── label_tool.py         # 半自动标注工具
+│   ├── label_tool.py         # 标注验证脚本
+│   ├── label_tool.py         # 混合方案（动态权重调整、冲突解决机制）
 │   ├── combat.py             # 战斗系统
 │   ├── utils.py              # 工具函数
+│   ├── images_array.py       # 加载图像集
 │   └── monitor.py            # 状态监控面板
 │
 │── tools/
 |   └── bot.py                # 自定义锚点计算脚本
 │
 ├── yolov5/                   # YOLOv5官方代码
+│
+├── terrain_profiles/         # 地形配置文件
+│   ├── base.yaml             # 基础地形
+│
 └── requirements.txt          # 依赖项

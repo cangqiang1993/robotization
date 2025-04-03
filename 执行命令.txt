@@ -1,0 +1,8 @@
+1、下载 yolo预训练模型
+    ① wget https://github.com/ultralytics/yolov5/releases/download/v6.0/yolov5s.pt
+    ② 下载到指定目录（例如项目目录）：wget -P E:/YOLO/ https://github.com/ultralytics/yolov5/releases/download/v6.0/yolov5s.pt
+2、Windows 查看目录
+# 查看当前目录
+Get-Location
+# 检查文件是否存在
+dir yolov5s.pt

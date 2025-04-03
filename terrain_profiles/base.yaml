@@ -1,0 +1,19 @@
+# 地形基础参数
+base_params:
+  friction: 1.0       # 摩擦系数 (1.0为正常)
+  sound_effect: "default_step.wav"  # 脚步声效、
+  slope_limit: 45 # 最大可行走坡度
+  step_height: 0.5 # 可跨越高度
+
+# 视觉特征 (用于无监督检测)
+visual:
+  color_range:        # HSV范围
+    h: [0, 180]
+    s: [0, 255]
+    v: [0, 255]
+  texture: "uniform"  # 纹理类型(uniform/striped/checkered)
+
+# 导航参数
+navigation:
+  cost_multiplier: 1.0  # 移动消耗系数
+  avoidance_priority: 0  # 避障优先级(0-10)

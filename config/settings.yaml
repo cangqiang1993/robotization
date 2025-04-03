@@ -1,8 +1,22 @@
+# 游戏配置
+obs:
+  mode: "virtual_cam"  # virtual_cam/window/screen
+  camera_index: 2      # 虚拟摄像头设备索引 0、1、2
+
 # 新增性能配置
 performance:
-  target_fps: 30
-  max_cpu_usage: 85
   detection_interval: 0.1
+  target_fps: 60
+  max_cpu_usage: 85
+  dynamic_detection: true  # 动态调整检测频率
+
+# YOLOv5模型配置
+yolo:
+  weights_path: "data/weights/yolov5s.pt"
+  device: "cuda:0"  # 自动选择
+  img_size: 640
+  conf_thres: 0.7
+  iou_thres: 0.45
 
 # 调试配置
 debug:
@@ -10,26 +24,103 @@ debug:
   save_failed_frames: false
   log_level: "INFO"
 
-# config/settings.yaml
-game:
-  type: "3dmmo"  # 2d/3dmmo
-  camera:
-    fov: [70, 40]  # 水平,垂直视野角度
-    resolution: [1920, 1080]
-
-3d_perception:
-  depth_model: "models/depth_estimation.pth"
-  min_depth: 0.5    # 最近距离(米)
-  max_depth: 100.0  # 最远距离(米)
-
+# 战斗系统
 combat:
   threat_levels:   # 怪物威胁等级
     monster_normal: 1
     monster_elite: 3
     monster_boss: 5
+  skill_keys: [ "1", "2", "3", "4" ]   #在combat.py中的技能释放逻辑
+  potion_key: "q"  #药水键
+  min_health: 0.3  # 血量低于30%撤退
+  max_combat_duration: 120  # 最大战斗持续时间(秒)
+  target_priority: [ 2, 1, 0 ]  # 优先攻击BOSS → 精英 → 小怪
 
-navigation:
-  terrain_cost:    # 地形移动成本
-    water: 1.5
-    cliff: 2.0
-    normal: 1.0
+
+game:
+  type: "3dmmo"  # 2d/3dmmo
+  window_title: "OBS 30.2.2"  # 仅window模式需要
+  region: [0, 0, 1280, 720]  # 捕获区域，所有模式都可能用到
+  classes:  # 游戏内目标类别
+    0: monster_normal  # 普通小怪，数量多、体型中等、生命值低
+    1: monster_elite   # 精英怪，体型较大、带有特殊光效或标识、攻击力高
+    2: monster_boss    # BOSS级怪物，体型巨大、有独特模型/特效、通常位于固定区域
+    3: npc_friendly    # 友好NPC，通常站立不动、头顶有感叹号/问号等交互标识、
+    4: ui_button       # 游戏界面按钮（如任务提交、商店等），有固定位置和标准UI样式
+    5: item_health     # 血瓶/治疗物品，通常为红色瓶状或十字标志
+    6: item_mana       # 蓝瓶/魔法物品，通常为蓝色瓶状或魔法符文
+    7: minimap_marker  # 小地图上的路径点/任务标记，通常为黄色箭头或特殊图标
+    8: tree            # 树木
+    9: rock            # 岩石
+    10: wall           # 墙壁
+  navigation: # YOLO障碍物类别
+    obstacle_classes: [ 'tree', 'rock', 'wall', 'monster' ]  # tree:树木 rock:岩石 wall:墙壁
+
+3d_perception:
+  min_depth: 0.5    # 最近距离(米)
+  max_depth: 100.0  # 最远距离(米)
+
+# 3d 游戏导航路劲设置
+3d_navigation:
+  depth_model: "E:/PythonProject/ZhuXIanShiJie/game_auto/data/weights/dpt_hybrid_384.pt"  #深度模型路径
+  geometry:
+    max_slope: 45           # 最大可行走坡度(度)
+    step_height: 0.2        # 台阶高度阈值（0-1）
+    height_threshold: 0.5   # 可跨越高度(米)
+  jump_distance: 1.2        # 角色跳跃距离(米)
+  camera:  # 用于将2D坐标转换为3D坐标。
+    fov: [ 70, 40 ]  # 水平,垂直视野角度
+    resolution: [ 1280, 720 ]
+    fx: 500.0
+    fy: 500.0
+    cx: 320.0
+    cy: 240.0
+  navigation:
+    max_slope_angle: 60     # 超过60度的坡度视为不可行走
+    max_step_height: 0.2    # 高度差超过0.2（归一化）视为障碍
+  terrain_cost: # 地形移动成本
+    water: 1.5  # 水域移动成本
+    cliff: 2.0  # 悬崖移动成本
+    normal: 1.0 # 默认地形成本
+    swamp: 1.8    # 可扩展其他地形（如沼泽）
+  move_keys: [ "w", "a", "s", "d" ]
+  move_duration: 0.5  # 基础移动持续时间(秒)
+  stuck_threshold: 5  # 卡住检测帧数
+
+minimap:
+  color_ranges:
+    waypoint:  # 黄色路径点
+      lower: [30, 150, 100]
+      upper: [50, 255, 255]
+    obstacle:  # 红色障碍物
+      lower: [0, 100, 100]
+      upper: [10, 255, 255]
+    player:    # 蓝色玩家标记
+      lower: [100, 150, 150]
+      upper: [140, 255, 255]
+
+anti_detection:
+  delays:
+    move: 0.15    # 移动操作基础延迟(秒)
+    skill: 0.3    # 技能释放延迟
+    turn: 0.25    # 转向延迟
+  mouse_jitter: 2 # 鼠标移动抖动像素范围
+
+hybrid_nav:
+  # 初始权重
+  initial_weights:
+    supervised: 0.6
+    unsupervised: 0.4
+
+  # 动态调整参数
+  weight_adjustment:
+    confidence_threshold: 0.8
+    max_supervised_weight: 0.9
+
+  # 冲突解决
+  conflict_resolution:
+    iou_threshold: 0.5
+    min_geo_confirm: 3  # 需要至少3个几何检测点确认
+
+images_path:
+  imag_path: "E:/PythonProject/ZhuXIanShiJie/game_auto/data/dataset/images/train/walk_circuit"  # 寻路图片集

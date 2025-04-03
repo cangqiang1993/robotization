@@ -3,8 +3,15 @@ from typing import List, Dict
 import cv2
 import numpy as np
 
+from src.mmo.perception_3d import GeometryAnalyzer
 from src.navigation import Navigator
 
+
+class MinimapNavigator:
+    def parse_minimap(self, minimap_img):
+        """解析小地图信息"""
+        # 识别地图标记、路径点、队友位置等
+        pass
 
 class MinimapProcessor:
     """小地图处理器，用于解析游戏小地图信息"""
@@ -99,8 +106,10 @@ class TerrainMemory:
 class MMO_Navigator(Navigator):
     def __init__(self, config, detector):
         super().__init__(config, detector)
+        from src.hybrid_navigator import HybridController  # 动态导入
         self.minimap_processor = MinimapProcessor(config)
         self.terrain_memory = TerrainMemory()
+        self.geometryAnalyzer = GeometryAnalyzer(config)
 
     def execute(self, frame, detections):
         # 处理小地图
@@ -118,10 +127,37 @@ class MMO_Navigator(Navigator):
         else:
             self.explore_3d()
 
+    def pathfinding_3d(self, target_pos, safety_distance=None):
+        """动态避障"""
+        if len(self.obstacles) > 0:
+            closest = min(self.obstacles, key=lambda x: x['distance'])
+            if closest['distance'] < safety_distance:
+                # 计算规避方向
+                escape_vector = self._calculate_escape_vector(closest)
+                self.move_in_direction(escape_vector)
+
     def _detect_obstacles(self, frame):
-        """检测3D障碍物"""
-        detections = self.detector.detect_3d(frame)
-        return [d for d in detections if self._is_obstacle(d)]
+        # 获取融合后的障碍物掩码
+        obstacle_mask = self.geometryAnalyzer.detect_obstacles(frame)
+
+        # 转换为检测结果格式
+        contours, _ = cv2.findContours(
+            obstacle_mask.astype(np.uint8),
+            cv2.RETR_EXTERNAL,
+            cv2.CHAIN_APPROX_SIMPLE
+        )
+
+        obstacles = []
+        for cnt in contours:
+            x, y, w, h = cv2.boundingRect(cnt)
+            obstacles.append({
+                'bbox': [x, y, x + w, y + h],
+                'class_name': 'obstacle',
+                'confidence': 1.0,
+                'position_3d': self.perception_3d.get_3d_position([x, y, x + w, y + h])
+            })
+
+        return obstacles
 
     def explore_3d(self):
         """3D环境探索"""
@@ -131,3 +167,61 @@ class MMO_Navigator(Navigator):
             self.move_in_direction(direction)
         else:
             super().explore_randomly()
+
+    def execute_3d_navigation(self, path):
+        for step in path:
+            while not self._reached_position(step):
+                frame = self.obs.get_frame()
+                obstacles = self._detect_obstacles(frame)
+
+                # 反应式避障（hybrid_navigator.py的逻辑）
+                if obstacles:
+                    escape_vector = self._calculate_escape_vector(obstacles)
+                    self.move_in_direction(escape_vector)
+                else:
+                    self.move_to(step)
+
+    def move_to(self, target):
+        while not self.reached(target):
+            frame = self.obs.get_frame()
+
+            # 步骤1：获取混合决策
+            actions = self._avoid_obstacles(frame)
+
+            # 步骤2：执行动作（示例）
+            if 'turn_left' in actions:
+                self._send_key('a', duration=0.2)
+            elif 'move_right' in actions:
+                self._send_key('d', duration=0.5)
+
+            # 步骤3：更新权重（每10帧）
+            if self.frame_count % 10 == 0:
+                self.hybrid_ctrl.update_weights(self.detector.last_detections)
+
+
+# 反应式避障控制
+class ReactiveController:
+    def avoid_obstacles(self, obstacle_mask):
+        """实时避障决策"""
+        # 划分危险区域（左/中/右）
+        h, w = obstacle_mask.shape
+        sectors = {
+            'left': obstacle_mask[h // 2:, :w // 3],
+            'center': obstacle_mask[h // 2:, w // 3:2 * w // 3],
+            'right': obstacle_mask[h // 2:, 2 * w // 3:]
+        }
+
+        # 计算各区域障碍密度
+        danger_level = {k: np.mean(v) for k, v in sectors.items()}
+
+        # 生成避障指令
+        if danger_level['center'] > 0.3:
+            if danger_level['left'] < danger_level['right']:
+                return ('turn', -30)  # 向左转
+            else:
+                return ('turn', 30)  # 向右转
+        elif danger_level['left'] > 0.4:
+            return ('move', 'right')
+        elif danger_level['right'] > 0.4:
+            return ('move', 'left')
+        return None

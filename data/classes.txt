@@ -1,0 +1,10 @@
+monster_normal
+monster_elite
+monster_boss
+npc_friendly
+ui_button
+item_health
+item_mana
+minimap_marker
+danger_zone
+safe_path

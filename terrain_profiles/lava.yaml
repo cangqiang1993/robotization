@@ -1,0 +1,20 @@
+extends: base  # 继承基础地形
+
+dynamic_params:
+  update_interval: 0.2  # 状态更新频率(秒)
+  damage_zones:         # 动态伤害区域配置
+    pulse_interval: 1.0
+    pulse_damage: 30
+
+visual: # 视觉特征参数
+  color_range:
+    h: [0, 20]      # 红黄色系
+    s: [200, 255]
+    v: [200, 255]
+  texture: "flowing"
+  animation_speed: 0.5  # 纹理流动速度
+
+hazards:
+  - type: "burning"     # 燃烧效果
+    duration: 5.0       # 持续5秒
+    dps: 15

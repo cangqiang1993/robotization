@@ -1,13 +1,29 @@
 train: ../dataset/images/train
 val: ../dataset/images/val
 
+# 路径标注规范
+labeling_rules:
+  danger_zone:
+    min_coverage: 1.2  # 动态元素标注需覆盖120%实际范围
+    color_hint: "red"  # 在LabelImg中用红色标注
+  safe_path:
+    min_width: 0.05    # 最小宽度占图像5%
+    color_hint: "green"
+
+# 角色尺寸参数化
+character:
+  collision_radius: 0.02  # 角色碰撞半径占图像宽度比例
+  jump_distance: 0.15     # 最大跳跃距离比例
+
 # 游戏目标类别
 names:
-  0: monster_normal
-  1: monster_elite
-  2: monster_boss
-  3: npc_friendly
-  4: item_health
-  5: item_mana
-  6: ui_button
-  7: minimap_marker
+    0: monster_normal  # 普通小怪，数量多、体型中等、生命值低
+    1: monster_elite   # 精英怪，体型较大、带有特殊光效或标识、攻击力高
+    2: monster_boss    # BOSS级怪物，体型巨大、有独特模型/特效、通常位于固定区域
+    3: npc_friendly    # 友好NPC，通常站立不动、头顶有感叹号/问号等交互标识、
+    4: ui_button       # 游戏界面按钮（如任务提交、商店等），有固定位置和标准UI样式
+    5: item_health     # 血瓶/治疗物品，通常为红色瓶状或十字标志
+    6: item_mana       # 蓝瓶/魔法物品，通常为蓝色瓶状或魔法符文
+    7: minimap_marker  # 小地图上的路径点/任务标记，通常为黄色箭头或特殊图标
+    8: danger_zone     # 危险区域（陷阱/怪物巡逻区），标注时应包含动态元素的运动轨迹最大范围
+    9: safe_path       # 安全路径，标注时需连通且宽度≥角色碰撞体积的2倍

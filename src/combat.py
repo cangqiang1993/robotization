@@ -14,8 +14,7 @@ class CombatSystem:
         self.detector = detector
         self.skill_keys = config['combat']['skill_keys']
         self.potion_key = config['combat']['potion_key']
-        self.retreat_threshold = config['combat']['retreat_threshold']
-        self.min_health = 0.3  # 30%血量以下强制撤退
+        self.min_health = config['combat']['min_health']
 
     def should_retreat(self, frame):
         """综合判断是否需要撤退"""

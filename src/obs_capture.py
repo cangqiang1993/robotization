@@ -14,7 +14,7 @@ logger = logging.getLogger("OBS Capture")
 def load_config(config_path: str = None) -> dict:
     """加载YAML配置文件"""
     if config_path is None:
-        config_path = Path("config.yaml")
+        config_path = Path("settings.yaml")
     else:
         config_path = Path(config_path)
 
@@ -122,7 +122,7 @@ class OBSCapture:
 
 if __name__ == "__main__":
     try:
-        config = load_config("E:/PythonProject/ZhuXIanShiJie/robotization/game_auto/config/config.yaml")
+        config = load_config("E:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml")
         with OBSCapture(config) as cap:
             while True:
                 frame = cap.get_frame()

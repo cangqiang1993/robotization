@@ -11,8 +11,13 @@ class Navigator:
     def __init__(self, config, detector):
         self.config = config
         self.detector = detector
-        self.move_keys = config['navigation']['move_keys']
-        self.move_duration = config['navigation']['move_duration']
+        self.move_keys = config['3d_navigation']['move_keys']  # 移动按键
+        self.move_duration = config['3d_navigation']['move_duration']  # 控制单次移动操作的持续时间（秒），影响移动距离和流畅度
+        self.color_ranges = {
+            'waypoint': config['minimap']['color_ranges']['waypoint'],
+            'obstacle': config['minimap']['color_ranges']['obstacle'],
+            'player': config['minimap']['color_ranges']['player']
+        }
         self.path_history = deque(maxlen=50)  # 存储位置历史
         self.last_positions = deque(maxlen=5)  # 短期位置记录
         self.stuck_timer = 0

@@ -1,0 +1,26 @@
+# 具体地形实例 - 沼泽
+extends: base  # 继承基础配置
+
+base_params:
+  friction: 0.6
+  sound_effect: "wet_step.wav"
+  movement_speed: 0.7  # 移动速度倍率
+
+visual:
+  color_range:
+    h: [80, 100]    # 绿色系
+    s: [100, 255]
+    v: [50, 150]
+  texture: "ripple"  # 波纹状
+  depth_characteristic:  # 深度特征
+    variance: 0.8     # 深度波动程度(0-1)
+    smoothness: 0.2   # 表面平滑度(0-1)
+
+navigation:
+  cost_multiplier: 2.5
+  avoidance_priority: 3
+  special_effects:
+    - type: "slow"
+      value: 0.5      # 减速50%
+    - type: "damage"
+      dps: 10         # 每秒伤害值

@@ -33,3 +33,18 @@ class MMO_CombatSystem(CombatSystem):
 
         # 分数公式 (可调整权重)
         return threat / (distance + 1)
+
+    def execute_3d_combat(self, target):
+        """3D空间战斗策略"""
+        # 保持最佳攻击距离
+        optimal_range = self.config['combat']['ranges'][target['class_name']]
+        current_dist = target['distance']
+
+        if current_dist > optimal_range * 1.2:
+            self.approach_target(target)
+        elif current_dist < optimal_range * 0.8:
+            self.retreat_from_target(target)
+
+        # 考虑Z轴攻击（如跳跃攻击）
+        if target['elevation'] > 2:
+            self.jump_attack()
