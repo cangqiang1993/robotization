@@ -12,6 +12,11 @@ auto_game_bot_yolo/
 │   └── weights/              # 模型权重
 │       └── best.pt           # 训练好的模型
 │
+├── models/
+│   ├── midas/                # 模型权重文件
+│   │   ├── images           # MiDaS 深度估计模型的权重文件
+│   └── └── combat_3d.py      # 权重模型定义
+│
 ├── config/
 │   ├── yolov5s.yaml          # 模型配置文件
 │   ├── game_yolov5s.yaml     # 游戏目标检测优化版

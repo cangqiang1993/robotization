@@ -1,7 +1,7 @@
 
 import os
 from collections import deque, defaultdict
-from datetime import time
+import time
 from pathlib import Path
 
 import cv2
@@ -98,7 +98,9 @@ def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None):
 
 class YOLODetector:
     def __init__(self, config):
-        # self.config = load_config()
+        self.last_detect_time = time.time()  # 初始化时间戳
+        self.adaptive_sizes = [640, 480, 320]
+        self.current_size_idx = 0
         # 设备选择
         self.device = config['yolo'].get('device')
         self._check_pytorch_version()
@@ -261,46 +263,40 @@ class YOLODetector:
         return cv2.matchTemplate(gray1, gray2, cv2.TM_CCOEFF_NORMED)[0][0]
 
     def _get_adaptive_size(self):
-        """根据帧率动态调整检测尺寸"""
-        if len(self.detection_cache) < 2:
+        """动态调整检测尺寸的逻辑"""
+        current_time = time.time()
+        process_time = current_time - self.last_detect_time  # 计算上一帧的检测耗时
+        self.last_detect_time = current_time  # 更新时间戳
+
+        if len(self.detection_cache) < 2:   # 如果缓存不足，默认返回最大分辨率
             return self.adaptive_sizes[0]
 
-        process_time = time.time() - self.last_detect_time
-        if process_time > 0.1:  # 处理时间过长则降级
+        if process_time > 0.1:  # 如果检测太慢，降低分辨率（提高速度）
             self.current_size_idx = min(self.current_size_idx + 1, len(self.adaptive_sizes) - 1)
-        elif process_time < 0.05:  # 处理很快则升级
+        elif process_time < 0.05:  # 如果检测很快，尝试提高分辨率（提高精度）
             self.current_size_idx = max(self.current_size_idx - 1, 0)
-        return self.adaptive_sizes[self.current_size_idx]
+        logging.info(f"当前检测分辨率:{self.adaptive_sizes[self.current_size_idx]}")
+        return self.adaptive_sizes[self.current_size_idx]   # 返回当前分辨率
 
     def preprocess(self, img, img_size=640):
-        """完全安全的图像预处理方法"""
         try:
-            # 1. 使用letterbox调整大小
+            # 1. 如果是灰度图，转为BGR
+            if len(img.shape) == 2:
+                img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+
+            # 2. letterbox调整大小
             img = letterbox(img, img_size, stride=self.model.stride, auto=False)[0]
-            print('获取图片', img)
-            # 2. 确保图像是连续的numpy数组
-            if not img.flags['C_CONTIGUOUS']:
-                img = np.ascontiguousarray(img)
 
-            # 3. BGR转RGB和转置维度 (HWC to CHW)
-            img = img[:, :, ::-1]  # BGR to RGB
-            img = img.transpose(2, 0, 1)  # HWC to CHW
+            # 3. BGR→RGB + 强制拷贝（关键修复）
+            img = img[:, :, ::-1].copy()  # .copy() 消除负步幅
 
-            # 4. 再次确保数据连续性
-            img = np.ascontiguousarray(img)
+            # 4. 转置HWC→CHW
+            img = img.transpose(2, 0, 1)  # 此时img已经是C连续
 
-            # 5. 转换为PyTorch张量
-            img = torch.from_numpy(img)
+            # 5. 转Tensor并归一化
+            img = torch.from_numpy(img).to(self.device).float() / 255.0
+            return img.unsqueeze(0)
 
-            # 6. 转移到目标设备并归一化
-            img = img.to(self.device)
-            img = img.float() / 255.0
-
-            # 7. 添加批次维度
-            if img.ndimension() == 3:
-                img = img.unsqueeze(0)
-            print(img)
-            return img
         except Exception as e:
             logging.error(f"预处理失败: {str(e)}")
             raise RuntimeError(f"图像预处理错误: {str(e)}")

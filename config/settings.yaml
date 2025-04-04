@@ -62,7 +62,7 @@ game:
 
 # 3d 游戏导航路劲设置
 3d_navigation:
-  depth_model: "E:/PythonProject/ZhuXIanShiJie/game_auto/data/weights/dpt_hybrid_384.pt"  #深度模型路径
+  depth_model: "E:/PythonProject/ZhuXIanShiJie/game_auto/models/midas/dpt_hybrid_384.pt"  #深度模型路径
   geometry:
     max_slope: 45           # 最大可行走坡度(度)
     step_height: 0.2        # 台阶高度阈值（0-1）

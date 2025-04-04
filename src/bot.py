@@ -139,7 +139,7 @@ class GameBot:
         self.antidetection = AntiDetection(self.config.get('antidetection', {}))
 
         # OBS捕获
-        self.obs = OBSCapture(self.config['obs']['camera_index'])
+        self.obs = OBSCapture(self.config)
 
         # 状态控制
         self.running = False
@@ -268,29 +268,36 @@ class GameBot:
 
     def _build_3d_map(self):
         """构建3D可行走地图，整合深度感知和几何分析"""
+        # 获取第一帧的尺寸作为基准
+        base_frame = self.frames[0]
+        h, w = base_frame.shape[:2]
+
         # 初始化3D地图数组
-        map_3d = np.zeros((len(self.frames), self.frames[0].shape[0], self.frames[0].shape[1]), dtype=np.uint8)
+        map_3d = np.zeros((len(self.frames), h, w), dtype=np.uint8)
 
         for i, frame in enumerate(self.frames):
-            # 1. 估计深度图
+            # 1. 估计深度图 (确保输出尺寸与输入一致)
             depth_map = self.perception_3d.depth_estimator.estimate(frame)
 
-            # 2. 计算可行走区域
+            # 2. 如果深度图尺寸不匹配，调整到原始帧尺寸
+            if depth_map.shape[:2] != (h, w):
+                depth_map = cv2.resize(depth_map, (w, h))
+
+            # 3. 计算可行走区域
             walkable_mask = self.perception_3d.get_walkable_mask(depth_map)
 
-            # 3. 障碍物检测 (使用GeometryAnalyzer)
-            if hasattr(self.perception_3d, 'geometry_analyzer'):
-                obstacles = self.perception_3d.geometry_analyzer.detect_obstacles(depth_map)
-                walkable_mask &= ~obstacles
+            # 4. 确保掩码尺寸正确
+            if walkable_mask.shape != (h, w):
+                walkable_mask = cv2.resize(walkable_mask.astype(float), (w, h)) > 0.5
 
-            # 4. 将可行走区域存入3D地图
+            # 5. 将可行走区域存入3D地图
             map_3d[i] = walkable_mask.astype(np.uint8)
 
-            # 5. 可选: 应用形态学操作平滑地图
+            # 6. 可选: 应用形态学操作平滑地图
             kernel = np.ones((3, 3), np.uint8)
             map_3d[i] = cv2.morphologyEx(map_3d[i], cv2.MORPH_CLOSE, kernel)
 
-        # 6. 确保地图连通性 (移除孤立区域)
+        # 7. 确保地图连通性 (移除孤立区域)
         for i in range(map_3d.shape[0]):
             _, labels = cv2.connectedComponents(map_3d[i])
             if np.max(labels) > 0:  # 有连通区域
@@ -299,6 +306,27 @@ class GameBot:
                 map_3d[i] = (labels == largest_component).astype(np.uint8)
 
         return map_3d
+
+    def _detect_boss_position(self, frame):
+        """检测BOSS位置"""
+        # 使用YOLO检测器检测BOSS
+        detections = self.detector.detect(frame)
+
+        # 筛选BOSS类别的检测结果
+        boss_detections = [
+            d for d in detections
+            if d['class_name'] in self.config['combat'].get('boss_classes', ['boss'])
+        ]
+
+        if not boss_detections:
+            # 如果没有检测到BOSS，返回帧中心位置
+            h, w = frame.shape[:2]
+            return (w // 2, h // 2)
+
+        # 返回第一个BOSS检测框的中心位置
+        boss = boss_detections[0]
+        x1, y1, x2, y2 = boss['bbox']
+        return ((x1 + x2) // 2, (y1 + y2) // 2)
 
 
 if __name__ == "__main__":

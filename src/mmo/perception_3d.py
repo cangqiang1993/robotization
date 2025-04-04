@@ -26,6 +26,7 @@ class DepthEstimator:
         try:
             # 这里应该替换为您实际使用的深度估计模型
             # 示例使用MiDaS小型模型结构
+            logging.info(f'加载预训练深度估计模型路径： {model_path}')
             model = torch.hub.load('intel-isl/MiDaS', 'DPT_Hybrid', pretrained=False)
             model.load_state_dict(torch.load(model_path))
             model.to(self.device)
@@ -37,8 +38,10 @@ class DepthEstimator:
         """
         从RGB图像估计深度图
         返回:
-            depth_map: 归一化的深度图 (0-1, 1表示最近)
+            depth_map: 归一化的深度图 (0-1, 1表示最近)，与输入尺寸相同
         """
+        original_h, original_w = frame.shape[:2]
+
         # 预处理
         img = self._preprocess(frame)
 
@@ -49,6 +52,9 @@ class DepthEstimator:
 
         # 后处理
         depth = cv2.normalize(depth, None, 0, 1, cv2.NORM_MINMAX)
+
+        # 调整回原始尺寸
+        depth = cv2.resize(depth, (original_w, original_h))
         return depth
 
     def _preprocess(self, frame: np.ndarray) -> torch.Tensor:
@@ -80,9 +86,6 @@ class ThreeDPerception:
         # 计算法线向量
         normals = self._calculate_normals(depth_map)
 
-        print(normals.shape)  # 应为 (height, width, 3)
-        print(normals[100, 100])  # 示例像素的法线向量，如 [0.1, -0.2, 0.98]
-
         # 通过法线与垂直方向的夹角判断坡度
         vertical = np.array([0, 0, 1])
         angles = np.arccos(np.dot(normals, vertical))
@@ -90,7 +93,8 @@ class ThreeDPerception:
         # 生成可行走区域（坡度<阈值 且 高度差<台阶高度）
         walkable = (angles < np.radians(self.walkable_threshold)) & \
                    (depth_map < self.step_height)
-        return walkable
+
+        return walkable.astype(np.uint8)
 
     def update(self, frame):
         """更新3D环境感知"""
@@ -146,11 +150,12 @@ class ThreeDPerception:
 # 深度图与几何分析的集成
 class GeometryAnalyzer:
     def __init__(self, config):
-        self.max_slope = config['3d_navigation']['geometry']['max_slope']  # 最大坡度（度）
-        self.step_height = config['3d_navigation']['geometry']['step_height']  # 最大台阶高度（归一化值）
+        self.max_slope = config['3d_navigation']['geometry']['max_slope']
+        self.step_height = config['3d_navigation']['geometry']['step_height']
         self.config = config
         self.detector = YOLODetector(self.config)
         self.ImagesPathfinding = ImagesPathfinding
+        self.depth_estimator = DepthEstimator(config)  # 直接初始化深度估计器
 
     def _calculate_normals(self, depth_map):
         """计算深度图的表面法线向量"""
@@ -165,70 +170,53 @@ class GeometryAnalyzer:
         return normals
 
     def detect_obstacles(self, frame: np.ndarray) -> np.ndarray:
-        """
-        融合YOLO语义检测和深度几何分析的障碍物检测
-        返回:
-            combined_mask (np.ndarray): 二值化障碍物掩码 (1=障碍物)
-        """
         # 1. YOLO检测语义障碍物
         result = self.ImagesPathfinding(self.config['images_path']['imag_path']).load_images()
-        # 处理返回结果（单图或列表）
         detections = self.detector.detect(result if isinstance(result, list) else [result])
         yolo_obstacles = np.zeros(frame.shape[:2], dtype=np.uint8)
 
-        # 筛选障碍物类别 (从配置读取)
+        # 筛选障碍物类别
         obstacle_classes = self.config['game']['navigation'].get('obstacle_classes', ['tree', 'rock', 'wall', 'monster'])
 
         for det in detections:
-            if det['class_name'] in obstacle_classes:
-                x1, y1, x2, y2 = map(int, det['bbox'])
-                yolo_obstacles[y1:y2, x1:x2] = 1  # 标记障碍区域
+            if isinstance(det, dict) and 'class_name' in det:
+                class_name = det['class_name']
+                bbox = det['bbox']
+            elif isinstance(det, (list, tuple)) and len(det) >= 6:
+                class_idx = int(det[5])
+                class_name = self.detector.names[class_idx]
+                bbox = det[:4]
+            else:
+                continue
 
-        # 2. 深度模型几何分析
-        depth_map = self.perception_3d.depth_estimator.estimate(frame)
+            if class_name in obstacle_classes:
+                x1, y1, x2, y2 = map(int, bbox)
+                yolo_obstacles[y1:y2, x1:x2] = 1
 
-        # 2.1 坡度障碍检测
-        normals = self.perception_3d.geometry_analyzer._calculate_normals(depth_map)
+        # 2. 深度模型几何分析（使用自己的 depth_estimator）
+        depth_map = self.depth_estimator.estimate(frame)
+
+        # 调用自己的 _calculate_normals 方法
+        normals = self._calculate_normals(depth_map)
         vertical = np.array([0, 0, 1])
-        slope = np.arccos(np.dot(normals, vertical))  # 坡度(弧度)
-        slope_obstacles = (slope > np.radians(self.perception_3d.walkable_threshold))
+        slope = np.arccos(np.dot(normals, vertical))
+        slope_obstacles = (slope > np.radians(self.max_slope))
 
-        # 2.2 高度突变检测
         blurred_depth = cv2.GaussianBlur(depth_map, (5, 5), 0)
         height_diff = np.abs(depth_map - blurred_depth)
-        step_obstacles = (height_diff > self.perception_3d.step_height)
+        step_obstacles = (height_diff > self.step_height)
 
-        # 合并几何障碍
         geometry_obstacles = slope_obstacles | step_obstacles
 
-        # 3. 融合策略 (加权投票)
+        # 融合策略
         yolo_weight = self.config['hybrid_nav'].get('yolo_weight', 0.6)
-        geo_weight = 1 - yolo_weight
+        combined = yolo_weight * yolo_obstacles + (1 - yolo_weight) * geometry_obstacles.astype(np.float32)
+        _, combined_mask = cv2.threshold(combined, 0.5, 1, cv2.THRESH_BINARY)
 
-        # 3.1 对YOLO检测结果进行形态学处理
-        kernel = np.ones((5, 5), np.uint8)
-        yolo_processed = cv2.morphologyEx(yolo_obstacles, cv2.MORPH_CLOSE, kernel)
-
-        # 3.2 加权融合
-        combined = (yolo_weight * yolo_processed +
-                    geo_weight * geometry_obstacles.astype(np.float32))
-
-        # 4. 二值化 (自适应阈值)
-        _, combined_mask = cv2.threshold(
-            combined,
-            0.5,  # 可配置阈值
-            1,
-            cv2.THRESH_BINARY
-        )
-
-        # 5. 后处理 (移除小噪点)
-        contours, _ = cv2.findContours(
-            combined_mask.astype(np.uint8),
-            cv2.RETR_EXTERNAL,
-            cv2.CHAIN_APPROX_SIMPLE
-        )
+        # 后处理
+        contours, _ = cv2.findContours(combined_mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in contours:
-            if cv2.contourArea(cnt) < 50:  # 面积阈值可配置
+            if cv2.contourArea(cnt) < 50:
                 cv2.drawContours(combined_mask, [cnt], -1, 0, -1)
 
         return combined_mask.astype(bool)
