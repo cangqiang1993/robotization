@@ -174,7 +174,7 @@ class YOLODetector:
             'distance': depth
         }
 
-    def detect(self, images, conf_thres=0.7, iou_thres=0.45):
+    def detect(self, images, conf_thres=0.3, iou_thres=0.45):
         """批量检测图像"""
         if not isinstance(images, list):
             images = [images]

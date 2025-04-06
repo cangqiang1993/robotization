@@ -85,6 +85,7 @@ if __name__ == '__main__':
         # logging.info("检测结果:", detections)
 
         bot = GameBot("E:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml", "E:/PythonProject/ZhuXIanShiJie/game_auto/data/dataset/images/train/walk_circuit")
+        bot.start()
         # bot.load_video_frames(result if isinstance(result, list) else [result])
         # global_path = bot.plan_route()
     #
