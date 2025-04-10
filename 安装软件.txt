@@ -1,0 +1,24 @@
+CUDA
+
+
+ffmpeg -i F:\PythonProject\ZhuXIanShiJie\game_auto\data\recordings\寻路-1.mp4 -r 6 F:\PythonProject\ZhuXIanShiJie\game_auto\data\dataset\images\train\frame_%04d.png
+
+python train.py --img 640 --batch 16 --epochs 50 --data config/game_data.yaml --cfg config/game_yolov5s.yaml --weights data/weights/yolov5s.pt --name game_model_v1 --cache
+
+
+
+# 训练启动命令
+ python yolov5/train.py --data F:/PythonProject/ZhuXIanShiJie/game_auto/config/game_yolov5s.yaml --cfg F:/PythonProject/ZhuXIanShiJie/game_auto/config/yolov5s.yaml --weights F:/PythonProject/ZhuXIanShiJie/game_auto/data/weights/best.pt --batch-size 16 --epochs 50 --img-size 896 --project F:/PythonProject/ZhuXIanShiJie/game_auto/data/weights/ --name custom_train
+
+
+
+
+python yolov5/train.py \
+    --data F:/PythonProject/ZhuXIanShiJie/game_auto/config/game_yolov5s.yaml \
+    --cfg F:/PythonProject/ZhuXIanShiJie/game_auto/config/yolov5s.yaml \
+    --weights F:/PythonProject/ZhuXIanShiJie/game_auto/data/weights/best.pt \
+    --batch-size 16 \
+    --epochs 50 \
+    --img-size 640 \
+    --project F:/PythonProject/ZhuXIanShiJie/game_auto/data/weights/ \
+    --name custom_train

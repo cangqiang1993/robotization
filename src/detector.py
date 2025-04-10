@@ -28,7 +28,7 @@ logging.basicConfig(
 
 
 # 全局变量定义
-CONFIG_PATH = "E:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml"  # 默认配置文件路径
+CONFIG_PATH = "F:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml"  # 默认配置文件路径
 
 # 初始化配置文件
 def load_config(config_path: str = None) -> dict:
@@ -99,7 +99,7 @@ def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None):
 class YOLODetector:
     def __init__(self, config):
         self.last_detect_time = time.time()  # 初始化时间戳
-        self.adaptive_sizes = [640, 480, 320]
+        self.adaptive_sizes = [896, 640, 320]
         self.current_size_idx = 0
         # 设备选择
         self.device = config['yolo'].get('device')
@@ -137,7 +137,7 @@ class YOLODetector:
         self.cache_size = 3  # 缓存最近3帧
         self.frame_cache = deque(maxlen=self.cache_size)
         self.detection_cache = deque(maxlen=self.cache_size)
-        self.adaptive_sizes = [640, 480, 320]  # 动态调整的检测尺寸
+        self.adaptive_sizes = [896, 640, 320]  # 动态调整的检测尺寸
         self.current_size_idx = 0
 
     def _check_pytorch_version(self):
@@ -278,7 +278,7 @@ class YOLODetector:
         logging.info(f"当前检测分辨率:{self.adaptive_sizes[self.current_size_idx]}")
         return self.adaptive_sizes[self.current_size_idx]   # 返回当前分辨率
 
-    def preprocess(self, img, img_size=640):
+    def preprocess(self, img, img_size):
         try:
             # 1. 如果是灰度图，转为BGR
             if len(img.shape) == 2:

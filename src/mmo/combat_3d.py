@@ -1,5 +1,10 @@
+import logging
+
 from src.combat import CombatSystem
 
+# 配置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("OBS Capture")
 
 class MMO_CombatSystem(CombatSystem):
     def execute(self, frame, detections):
@@ -29,9 +34,9 @@ class MMO_CombatSystem(CombatSystem):
     def _calculate_target_score(self, monster, frame):
         """计算目标优先级分数"""
         distance = monster.get('distance', 100)
-        threat = self.config['monster_threat'].get(monster['class_name'], 1)
-
-        # 分数公式 (可调整权重)
+        threat = self.config['combat']['monster_threat'].get(monster['class_name'], 1)
+        target = self.select_3d_target(monster, frame)
+        logger.info(f"Selected target: {target['class_name']}, Threat: {self.config['combat']['monster_threat'][target['class_name']]}")  # 分数公式 (可调整权重)
         return threat / (distance + 1)
 
     def execute_3d_combat(self, target):

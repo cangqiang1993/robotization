@@ -96,6 +96,7 @@ class AntiDetection:
 
 class GameBot:
     def __init__(self, config_path, walk_circuit_path):
+        self.config = load_config(config_path)
         self.imgs = ImagesPathfinding(walk_circuit_path)
         # 加载配置
         with open(config_path, 'r', encoding='utf-8') as f:
@@ -145,7 +146,7 @@ class GameBot:
         self.running = False
         self.paused = False
         self.current_mode = 'explore'  # explore/combat/follow
-        config = load_config("E:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml")
+        config = load_config("F:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml")
         self.monitor = GameMonitor(config)
 
     def start(self, detect_start=None):
@@ -219,9 +220,18 @@ class GameBot:
             listener.stop()
 
     def should_enter_combat(self, detections):
-        """判断是否应该进入战斗状态"""
-        monster_detections = [d for d in detections if d['class_name'] in self.config['combat']['monster_classes']]
-        return len(monster_detections) >= self.config['combat']['min_monsters']
+        """智能战斗决策"""
+        monsters = [d for d in detections if d['class_name'] in self.config['combat']['monster_classes']]
+
+        # 根据怪物密度和路径阻塞情况决定是否战斗
+        if not monsters:
+            return False
+
+        # 计算怪物阻塞路径的程度
+        path_blocked = self._check_path_blockage(monsters)
+        min_monsters = self.config['combat'].get('min_monsters', 1)
+
+        return len(monsters) >= min_monsters or path_blocked
 
     def on_key_press(self, key):
         """键盘监听回调"""

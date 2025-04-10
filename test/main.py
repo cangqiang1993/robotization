@@ -12,7 +12,7 @@ from src.bot import GameBot
 from src.detector import YOLODetector, load_config
 
 # 全局变量定义
-CONFIG_PATH = "E:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml"  # 默认配置文件路径
+CONFIG_PATH = "F:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml"  # 默认配置文件路径
 import logging
 logging.basicConfig(
     level=logging.INFO,
@@ -58,7 +58,7 @@ if __name__ == '__main__':
         print(torchvision.__version__)  # 如 '0.15.2+cu117'
         print(torch.cuda.is_available())  # 必须返回 True
         # 示例调用 - 替换为您的实际路径
-        # result = load_images("E:/PythonProject/ZhuXIanShiJie/game_auto/data/dataset/images/train/walk_circuit")
+        # result = load_images("F:/PythonProject/ZhuXIanShiJie/game_auto/data/dataset/images/train/walk_circuit")
         #
         # # 处理返回结果（单图或列表）
         # if isinstance(result, list):
@@ -76,7 +76,7 @@ if __name__ == '__main__':
         # else:
         #     raise ValueError("图像格式错误，无法显示")
         #
-        # config = load_config("E:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml")
+        # config = load_config("F:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml")
         # # 初始化检测器
         # detector = YOLODetector(config)
         #
@@ -84,7 +84,8 @@ if __name__ == '__main__':
         # detections = detector.detect(result if isinstance(result, list) else [result])
         # logging.info("检测结果:", detections)
 
-        bot = GameBot("E:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml", "E:/PythonProject/ZhuXIanShiJie/game_auto/data/dataset/images/train/walk_circuit")
+        bot = GameBot("F:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml", "F:/PythonProject/ZhuXIanShiJie/game_auto/data/dataset/images/train")
+        bot.start()
         # bot.load_video_frames(result if isinstance(result, list) else [result])
         # global_path = bot.plan_route()
     #

@@ -1,7 +1,7 @@
 # 游戏配置
 obs:
   mode: "virtual_cam"  # virtual_cam/window/screen
-  camera_index: 2      # 虚拟摄像头设备索引 0、1、2
+  camera_index: 0      # 虚拟摄像头设备索引 0、1、2
 
 # 新增性能配置
 performance:
@@ -26,7 +26,7 @@ debug:
 
 # 战斗系统
 combat:
-  threat_levels:   # 怪物威胁等级
+  monster_threat:   # 怪物威胁等级
     monster_normal: 1
     monster_elite: 3
     monster_boss: 5
@@ -39,20 +39,23 @@ combat:
 
 game:
   type: "3dmmo"  # 2d/3dmmo
-  window_title: "OBS 30.2.2"  # 仅window模式需要
+  window_title: "OBS 31.0.2"  # 仅window模式需要
   region: [0, 0, 1280, 720]  # 捕获区域，所有模式都可能用到
   classes:  # 游戏内目标类别
-    0: monster_normal  # 普通小怪，数量多、体型中等、生命值低
-    1: monster_elite   # 精英怪，体型较大、带有特殊光效或标识、攻击力高
-    2: monster_boss    # BOSS级怪物，体型巨大、有独特模型/特效、通常位于固定区域
-    3: npc_friendly    # 友好NPC，通常站立不动、头顶有感叹号/问号等交互标识、
-    4: ui_button       # 游戏界面按钮（如任务提交、商店等），有固定位置和标准UI样式
-    5: item_health     # 血瓶/治疗物品，通常为红色瓶状或十字标志
-    6: item_mana       # 蓝瓶/魔法物品，通常为蓝色瓶状或魔法符文
-    7: minimap_marker  # 小地图上的路径点/任务标记，通常为黄色箭头或特殊图标
-    8: tree            # 树木
-    9: rock            # 岩石
-    10: wall           # 墙壁
+    0: car             # 占位
+    1: monster_normal  # 普通小怪，数量多、体型中等、生命值低
+    2: monster_elite   # 精英怪，体型较大、带有特殊光效或标识、攻击力高
+    3: monster_boss    # BOSS级怪物，体型巨大、有独特模型/特效、通常位于固定区域
+    4: npc_friendly    # 友好NPC，通常站立不动、头顶有感叹号/问号等交互标识、
+    5: ui_button       # 游戏界面按钮（如任务提交、商店等），有固定位置和标准UI样式
+    6: item_health     # 血瓶/治疗物品，通常为红色瓶状或十字标志
+    7: item_mana       # 蓝瓶/魔法物品，通常为蓝色瓶状或魔法符文
+    8: minimap_marker  # 小地图上的路径点/任务标记，通常为黄色箭头或特殊图标
+    9: tree            # 树木
+    10: rock            # 岩石
+    11: wall           # 墙壁
+    12: danger_zone     # 危险区域（陷阱/怪物巡逻区），标注时应包含动态元素的运动轨迹最大范围
+    13: safe_path       # 安全路径，标注时需连通且宽度≥角色碰撞体积的2倍
   navigation: # YOLO障碍物类别
     obstacle_classes: [ 'tree', 'rock', 'wall', 'monster' ]  # tree:树木 rock:岩石 wall:墙壁
 
@@ -62,7 +65,7 @@ game:
 
 # 3d 游戏导航路劲设置
 3d_navigation:
-  depth_model: "E:/PythonProject/ZhuXIanShiJie/game_auto/models/midas/dpt_hybrid_384.pt"  #深度模型路径
+  depth_model: "F:/PythonProject/ZhuXIanShiJie/game_auto/models/midas/dpt_hybrid_384.pt"  #深度模型路径
   geometry:
     max_slope: 45           # 最大可行走坡度(度)
     step_height: 0.2        # 台阶高度阈值（0-1）
@@ -123,4 +126,19 @@ hybrid_nav:
     min_geo_confirm: 3  # 需要至少3个几何检测点确认
 
 images_path:
-  imag_path: "E:/PythonProject/ZhuXIanShiJie/game_auto/data/dataset/images/train/walk_circuit"  # 寻路图片集
+  imag_path: "F:/PythonProject/ZhuXIanShiJie/game_auto/data/dataset/images/train"  # 寻路图片集
+
+training:
+  batch_size: 16  # 根据GPU显存调整
+  epochs: 50
+  data_yaml: "data/game_data.yaml"  # CVAT生成的YOLO格式标注文件路径
+
+training_mode:
+  enabled: true
+  model_save_path: "./models/route_training"  # 模型保存目录
+  tensorboard_log: "./logs/route_training"    # 训练日志目录
+  params:
+    learning_rate: 0.0003     # 与 PPO 默认值一致
+    max_steps: 10000          # 总训练步数
+  data:
+    route_images: "data/routes/"  # 训练图像路径

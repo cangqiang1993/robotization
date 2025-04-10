@@ -63,12 +63,6 @@ class OBSCapture:
                 self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
                 self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
                 logger.info("OBS虚拟摄像头初始化成功")
-                while True:
-                    frame = self.get_frame()
-                    if frame is not None:
-                        cv2.imshow('OBS Virtual Camera', frame)
-                    if cv2.waitKey(1) == ord('q'):
-                        break
         except Exception as e:
             logger.error(f"捕获初始化失败: {str(e)}")
             self.release()
@@ -127,7 +121,7 @@ class OBSCapture:
 
 if __name__ == "__main__":
     try:
-        config = load_config("E:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml")
+        config = load_config("F:/PythonProject/ZhuXIanShiJie/game_auto/config/settings.yaml")
         with OBSCapture(config) as cap:
             while True:
                 frame = cap.get_frame()
